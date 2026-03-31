@@ -1,6 +1,6 @@
-# Report Template
+# 报告模板
 
-Use this template for all code review output. Adapt section content to the review scope — omit empty sections rather than filling them with "N/A".
+所有代码审查输出使用此模板。根据审查范围调整各节内容——省略空节而非填充"N/A"。
 
 ---
 
@@ -89,10 +89,10 @@ Use this template for all code review output. Adapt section content to the revie
 
 ---
 
-## Template Usage Notes
+## 模板使用说明
 
-- **Issue numbering** is continuous across all severity levels (P0 starts at 1, P1 continues)
-- **Security section** always appears — even when no issues found, it serves as an explicit confirmation
-- **Architecture section** is optional — omit entirely when no architectural observations
-- **Coverage notes** always appear — they set expectations about what was and wasn't checked
-- **Next steps** always appear — it prompts the user to decide on action, keeping the review-first workflow
+- **问题编号**在所有严重程度等级之间连续编号（P0 从 1 开始，P1 接续）
+- **安全专项**始终出现——即使没有问题，也作为明确确认
+- **架构与设计**是可选的——没有架构层面的观察时完全省略
+- **审查覆盖说明**始终出现——设定已检查和未检查范围的预期
+- **下一步**始终出现——提示用户做出行动决策，保持审查优先的工作流

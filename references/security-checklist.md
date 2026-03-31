@@ -1,150 +1,150 @@
-# Security Review Checklist
+# 安全审查检查清单
 
-Cross-language security review checklist. Apply to all code regardless of language.
+跨语言安全审查检查清单。适用于所有代码，不区分语言。
 
-## Injection
+## 注入攻击
 
-### SQL Injection
-- [ ] All SQL queries use parameterized statements / prepared statements / ORM
-- [ ] No string concatenation, f-strings, or template literals in SQL queries
-- [ ] User input is never directly embedded in query strings
-- [ ] ORM raw query methods are reviewed for parameterization
+### SQL 注入
+- [ ] 所有 SQL 查询使用参数化语句 / 预编译语句 / ORM
+- [ ] SQL 查询中没有字符串拼接、f-string 或模板字面量
+- [ ] 用户输入永远不会直接嵌入查询字符串
+- [ ] ORM 的原始查询方法已审查参数化情况
 
-### Command Injection
-- [ ] No `Runtime.exec()`, `subprocess.run(shell=True)`, `child_process.exec()` with unsanitized input
-- [ ] Use array-form arguments: `subprocess.run(["ls", user_input])`, `spawn("ls", [user_input])`
-- [ ] Environment variables in commands are validated
+### 命令注入
+- [ ] 没有使用未清理输入的 `Runtime.exec()`、`subprocess.run(shell=True)`、`child_process.exec()`
+- [ ] 使用数组形式的参数：`subprocess.run(["ls", user_input])`、`spawn("ls", [user_input])`
+- [ ] 命令中的环境变量已做校验
 
-### XSS (Cross-Site Scripting)
-- [ ] No `dangerouslySetInnerHTML` (React) or `v-html` (Vue) with user content
-- [ ] HTML sanitization (DOMPurify) for any user-generated HTML rendering
-- [ ] Content Security Policy headers configured
-- [ ] URL construction from user input is validated (javascript: protocol, etc.)
+### XSS（跨站脚本）
+- [ ] 没有将用户内容传入 `dangerouslySetInnerHTML`（React）或 `v-html`（Vue）
+- [ ] 渲染用户生成的 HTML 时使用 HTML 消毒（DOMPurify）
+- [ ] 已配置 Content-Security-Policy 响应头
+- [ ] 来自用户输入的 URL 构造已做校验（javascript: 协议等）
 
-### SSRF (Server-Side Request Forgery)
-- [ ] Server-side HTTP requests validate target URLs against allowlist
-- [ ] No direct user input in URL construction for outgoing requests
-- [ ] Internal service URLs are not exposed to user control
+### SSRF（服务端请求伪造）
+- [ ] 服务端 HTTP 请求验证目标 URL 是否在白名单中
+- [ ] 外发请求的 URL 构造中没有直接使用用户输入
+- [ ] 内部服务 URL 未暴露给用户控制
 
-### Path Traversal
-- [ ] File paths from user input are sanitized and validated
-- [ ] `path.resolve()` / `Path.resolve()` / `os.path.realpath()` used to canonicalize paths
-- [ ] Verify resolved path stays within expected directory
-
----
-
-## Authentication & Authorization
-
-### Authentication
-- [ ] Passwords are hashed with strong algorithm (bcrypt, scrypt, argon2), never MD5/SHA
-- [ ] JWT tokens: validate signature, expiry, issuer, audience on every request
-- [ ] Session tokens are cryptographically random, sufficiently long
-- [ ] Login rate limiting is in place
-- [ ] Multi-factor authentication for sensitive operations
-
-### Authorization
-- [ ] Every endpoint checks authorization, not just authentication
-- [ ] IDOR protection: resource ownership verified before access
-- [ ] Role-based access control is enforced at the appropriate layer
-- [ ] Admin endpoints are separately protected
-- [ ] API keys have appropriate scope restrictions
-
-### Session Management
-- [ ] Sessions expire after reasonable inactivity period
-- [ ] Session invalidation on password change
-- [ ] Concurrent session limits for sensitive accounts
-- [ ] Secure cookie flags: `HttpOnly`, `Secure`, `SameSite`
+### 路径穿越
+- [ ] 来自用户输入的文件路径已做清理和校验
+- [ ] 使用 `path.resolve()` / `Path.resolve()` / `os.path.realpath()` 规范化路径
+- [ ] 验证解析后的路径是否在预期目录内
 
 ---
 
-## Data Protection
+## 认证与授权
 
-### Sensitive Data at Rest
-- [ ] Passwords and credentials are hashed, not encrypted or stored in plain text
-- [ ] PII (personally identifiable information) is encrypted in database if required
-- [ ] Database backups are encrypted
-- [ ] File uploads are stored outside web root
+### 认证
+- [ ] 密码使用强算法哈希（bcrypt、scrypt、argon2），绝不用 MD5/SHA
+- [ ] JWT token：每次请求都验证签名、过期时间、签发者、受众
+- [ ] 会话 token 具有密码学随机性，长度足够
+- [ ] 登录有速率限制
+- [ ] 敏感操作使用多因素认证
 
-### Sensitive Data in Transit
-- [ ] HTTPS enforced for all connections
-- [ ] TLS version 1.2+ minimum
-- [ ] Certificate pinning for mobile clients (if applicable)
-- [ ] No sensitive data in URL parameters (use POST body or headers)
+### 授权
+- [ ] 每个端点都检查授权，不仅是认证
+- [ ] IDOR 防护：访问资源前验证所有权
+- [ ] 基于角色的访问控制在适当的层面执行
+- [ ] 管理端点有独立保护
+- [ ] API Key 有适当的范围限制
 
-### Logging
-- [ ] No passwords, tokens, or API keys in log output
-- [ ] No PII in logs without masking/hashing
-- [ ] Log injection is prevented (sanitize log input)
-- [ ] Audit logs for sensitive operations (login, data export, permission changes)
-
----
-
-## Input Validation
-
-### Server-Side
-- [ ] All external input is validated at the server boundary
-- [ ] Input validation fails closed (reject unexpected, don't try to fix)
-- [ ] Type, length, range, and format are all checked
-- [ ] Upload file types and sizes are validated
-- [ ] Content-Type headers match actual content
-
-### Client-Side
-- [ ] Client validation is treated as UX enhancement, not security control
-- [ ] Server re-validates everything the client sends
+### 会话管理
+- [ ] 会话在合理的非活动期后过期
+- [ ] 密码修改时使现有会话失效
+- [ ] 敏感账号有并发会话数限制
+- [ ] 安全的 Cookie 标志：`HttpOnly`、`Secure`、`SameSite`
 
 ---
 
-## Cryptography
+## 数据保护
 
-### Common Issues
-- [ ] No custom cryptographic algorithms — use established libraries
-- [ ] AES-256 for symmetric encryption, RSA-2048+ or ECDSA for asymmetric
-- [ ] Random numbers for security purposes use `java.security.SecureRandom`, `secrets` module, `crypto.randomBytes()`
-- [ ] IVs/nonces are unique per encryption operation and never reused
-- [ ] Password hashing uses dedicated algorithms (bcrypt, argon2), not generic hashes
+### 静态敏感数据
+- [ ] 密码和凭证已哈希，而非加密或明文存储
+- [ ] 个人身份信息（PII）按要求在数据库中加密
+- [ ] 数据库备份已加密
+- [ ] 文件上传存储在 Web 根目录之外
 
-### Key Management
-- [ ] Encryption keys are rotated periodically
-- [ ] Keys are stored in key management systems (KMS, Vault), not in code or config files
-- [ ] Different keys for different environments (dev, staging, production)
+### 传输中的敏感数据
+- [ ] 所有连接强制 HTTPS
+- [ ] TLS 最低版本 1.2
+- [ ] 移动客户端使用证书固定（如适用）
+- [ ] URL 参数中不包含敏感数据（使用 POST body 或 Header）
 
----
-
-## Dependency & Supply Chain
-
-- [ ] Dependencies are pinned to specific versions with lockfiles
-- [ ] Regular vulnerability scanning: `npm audit`, `pip-audit`, `safety`, OWASP Dependency-Check
-- [ ] No unnecessary dependencies — each one is attack surface
-- [ ] Build scripts (`postinstall`, etc.) are reviewed
-- [ ] Container images use minimal base images and are scanned
+### 日志
+- [ ] 日志中没有密码、token 或 API Key
+- [ ] PII 未经脱敏/哈希不出现在日志中
+- [ ] 已防止日志注入（清理日志输入）
+- [ ] 敏感操作有审计日志（登录、数据导出、权限变更）
 
 ---
 
-## Concurrency Security
+## 输入校验
 
-- [ ] Race conditions in financial / state-changing operations (TOCTOU)
-- [ ] Database-level locking for critical updates: `SELECT ... FOR UPDATE`
-- [ ] Idempotency for payment and order operations
-- [ ] Distributed locks for multi-instance deployments
-- [ ] Rate limiting on expensive or sensitive operations
+### 服务端
+- [ ] 所有外部输入在服务端边界处校验
+- [ ] 输入校验采用"拒绝意外"策略（不尝试修复意外输入）
+- [ ] 类型、长度、范围和格式都做了检查
+- [ ] 上传文件类型和大小已校验
+- [ ] Content-Type 头与实际内容匹配
 
----
-
-## Deserialization
-
-- [ ] No `ObjectInputStream` (Java) with untrusted data
-- [ ] No `pickle.loads()` (Python) with untrusted data
-- [ ] No `yaml.load()` without `SafeLoader` (Python)
-- [ ] No `eval()` / `Function()` (JavaScript) with user input
-- [ ] JSON schema validation for all parsed external JSON
+### 客户端
+- [ ] 客户端校验仅视为用户体验增强，不是安全控制
+- [ ] 服务端重新校验客户端发送的所有数据
 
 ---
 
-## Configuration & Infrastructure
+## 密码学
 
-- [ ] Debug mode disabled in production
-- [ ] Error pages don't expose stack traces or internal details
-- [ ] CORS configured with specific origins, not `*`
-- [ ] HTTP security headers: `X-Content-Type-Options`, `X-Frame-Options`, `Strict-Transport-Security`
-- [ ] Secrets not in source code, Docker images, or public config files
-- [ ] Database connections use least-privilege credentials
+### 常见问题
+- [ ] 不使用自定义密码学算法——使用成熟的库
+- [ ] 对称加密使用 AES-256，非对称使用 RSA-2048+ 或 ECDSA
+- [ ] 安全目的的随机数使用 `java.security.SecureRandom`、`secrets` 模块、`crypto.randomBytes()`
+- [ ] IV/Nonce 每次加密操作都唯一，永不重复使用
+- [ ] 密码哈希使用专用算法（bcrypt、argon2），不用通用哈希
+
+### 密钥管理
+- [ ] 加密密钥定期轮换
+- [ ] 密钥存储在密钥管理系统（KMS、Vault）中，不在代码或配置文件中
+- [ ] 不同环境使用不同密钥（开发、预发布、生产）
+
+---
+
+## 依赖与供应链
+
+- [ ] 依赖项使用 lockfile 锁定到特定版本
+- [ ] 定期漏洞扫描：`npm audit`、`pip-audit`、`safety`、OWASP Dependency-Check
+- [ ] 没有不必要的依赖——每个依赖都是攻击面
+- [ ] 审查构建脚本（`postinstall` 等）
+- [ ] 容器镜像使用最小化基础镜像并做扫描
+
+---
+
+## 并发安全
+
+- [ ] 金融/状态变更操作中的竞态条件（TOCTOU）
+- [ ] 关键更新使用数据库级锁定：`SELECT ... FOR UPDATE`
+- [ ] 支付和订单操作保证幂等性
+- [ ] 多实例部署使用分布式锁
+- [ ] 昂贵或敏感操作有速率限制
+
+---
+
+## 反序列化
+
+- [ ] 不对不可信数据使用 `ObjectInputStream`（Java）
+- [ ] 不对不可信数据使用 `pickle.loads()`（Python）
+- [ ] 不在没有 `SafeLoader` 的情况下使用 `yaml.load()`（Python）
+- [ ] 不对用户输入使用 `eval()` / `Function()`（JavaScript）
+- [ ] 所有解析的外部 JSON 使用 JSON Schema 校验
+
+---
+
+## 配置与基础设施
+
+- [ ] 生产环境已关闭调试模式
+- [ ] 错误页面不暴露堆栈跟踪或内部细节
+- [ ] CORS 配置了特定来源，不是 `*`
+- [ ] HTTP 安全头：`X-Content-Type-Options`、`X-Frame-Options`、`Strict-Transport-Security`
+- [ ] 源代码、Docker 镜像或公开配置文件中没有密钥
+- [ ] 数据库连接使用最小权限凭证

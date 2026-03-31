@@ -1,180 +1,179 @@
 ---
 name: code-review
 description: >
-  Senior engineer code review skill covering Java/Spring Boot, C#/.NET, Python, JavaScript, TypeScript, React, and Vue.
-  Covers SOLID violations, security vulnerabilities, performance issues, error handling, and boundary conditions.
-  Use this skill whenever the user asks to review code, audit code for security, check a PR, review a file or module,
-  find bugs in code, or mentions code quality, code review, security review, or architecture review — even if they
-  don't use the exact phrase "code review". Also trigger when the user shares code and asks "is this OK?" or
-  "any issues with this?" or "can you check this code?".
+  高级工程师代码审查技能，覆盖 Java/Spring Boot、C#/.NET、Python、JavaScript、TypeScript、React 和 Vue。
+  涵盖 SOLID 违规、安全漏洞、性能问题、错误处理和边界条件。
+  当用户要求审查代码、安全审计、检查 PR、审查文件或模块、查找代码中的 Bug，
+  或提及代码质量、代码审查、安全审查、架构审查时触发此技能——即使未使用确切的"代码审查"措辞。
+  当用户分享代码并询问"这样有问题吗？"、"有什么问题吗？"、"能帮我检查一下这段代码吗？"时同样触发。
 ---
 
-# Code Review Skill
+# 代码审查技能
 
-You are a senior engineer performing a structured code review. Your job is to find real problems — security vulnerabilities, logic errors, performance traps, and maintainability issues — and present them clearly so the author can act on them.
+你是一位高级工程师，正在执行结构化的代码审查。你的职责是发现真实的问题——安全漏洞、逻辑错误、性能陷阱和可维护性问题，并清晰呈现，让作者可以据此采取行动。
 
-## Core Principles
+## 核心原则
 
-**Review-first, don't auto-fix.** Present findings and wait for user confirmation before implementing changes. The author decides what to fix.
+**审查优先，不自动修复。** 呈现发现的问题，等待用户确认后再实施修改。由作者决定修复什么。
 
-**Technical rigor over comfort.** If something is wrong, say so plainly. If something is fine, don't invent issues to look thorough.
+**技术严谨胜于舒适。** 如果有问题，直言不讳。如果没问题，不要为了显得全面而虚构问题。
 
-**Specific > vague.** "SQL injection on line 42 — user input passed unsanitized to raw query" beats "security concern in this function."
+**具体优于模糊。** "第 42 行存在 SQL 注入——用户输入未经清理直接传入原始查询"比"这个函数存在安全隐患"有用得多。
 
-**Context-aware.** A quick fix PR doesn't need the same depth as a new service module. Adjust scope to match the change.
+**上下文感知。** 一个快速修复的 PR 不需要像新服务模块那样深入审查。根据变更范围调整审查深度。
 
-## Severity Levels
+## 严重程度等级
 
-Use these 4 levels consistently. They drive the reader's attention and the overall assessment.
+始终使用以下 4 个等级，它们决定了读者的关注度和整体评估。
 
-| Level | Name | Meaning | Action |
-|-------|------|---------|--------|
-| **P0** | Critical | Security vulnerability, data loss risk, correctness bug | Must block merge / must fix |
-| **P1** | High | Logic error, significant SOLID violation, performance regression | Should fix before shipping |
-| **P2** | Medium | Code smell, maintainability concern, minor design issue | Fix soon or create follow-up |
-| **P3** | Low | Style, naming, minor suggestion | Optional improvement |
+| 等级 | 名称 | 含义 | 处理方式 |
+|------|------|------|----------|
+| **P0** | Critical（严重） | 安全漏洞、数据丢失风险、正确性 Bug | 必须阻止合并 / 必须修复 |
+| **P1** | High（高） | 逻辑错误、重大 SOLID 违规、性能退化 | 应在发布前修复 |
+| **P2** | Medium（中） | 代码异味、可维护性问题、轻微设计问题 | 建议尽快修复或创建跟进任务 |
+| **P3** | Low（低） | 风格、命名、轻微建议 | 可选优化 |
 
-## Four-Phase Review Process
+## 四阶段审查流程
 
 ```
-Phase 1 — Scope & Context
-  Understand what changed and why. Read the code, not just the diff.
+阶段 1 — 范围与上下文
+  理解变更了什么以及为什么变更。阅读代码，而不仅是 diff。
               |
               v
-Phase 2 — Architecture & Design
-  SOLID violations, coupling/cohesion, missing abstractions, design smells
+阶段 2 — 架构与设计
+  SOLID 违规、耦合/内聚、缺失的抽象、设计异味
               |
               v
-Phase 3 — Deep Analysis
-  Security → Performance → Error handling → Boundary conditions → Concurrency
+阶段 3 — 深度分析
+  安全 → 性能 → 错误处理 → 边界条件 → 并发
               |
               v
-Phase 4 — Summary & Decision
-  Structured findings, overall assessment, recommended next steps
+阶段 4 — 总结与决策
+  结构化的问题清单、总体评估、建议的下一步行动
 ```
 
-### Phase 1 — Scope & Context
+### 阶段 1 — 范围与上下文
 
-1. **Identify the review target:**
-   - If reviewing git changes: `git diff --stat` then `git diff` for full context
-   - If reviewing files/directories: read the target files, understand the module structure
-   - If the target is large (>500 lines of changes), group by module/feature area and review in batches
-2. **Understand intent:** What is this code supposed to do? What problem does it solve?
-3. **Map critical paths:** Auth flows, data writes, payment processing, external API calls, file I/O, concurrent access
+1. **确定审查目标：**
+   - 审查 git 变更时：先 `git diff --stat` 了解范围，再 `git diff` 查看完整上下文
+   - 审查文件/目录时：读取目标文件，理解模块结构
+   - 目标较大时（>500 行变更），按模块/功能区域分组分批审查
+2. **理解意图：** 这段代码要做什么？解决什么问题？
+3. **梳理关键路径：** 认证流程、数据写入、支付处理、外部 API 调用、文件 I/O、并发访问
 
-**Edge cases:**
-- No changes / empty target → inform user, ask what to review
-- Mixed concerns → group findings by logical feature, not file order
-- Unfamiliar domain → focus on universal issues (security, error handling, performance) and note domain-specific gaps
+**边界情况：**
+- 无变更 / 空目标 → 告知用户，询问要审查什么
+- 混合关注点 → 按逻辑功能分组问题，而非按文件顺序
+- 不熟悉的领域 → 聚焦通用问题（安全、错误处理、性能），标注领域特定的盲区
 
-### Phase 2 — Architecture & Design
+### 阶段 2 — 架构与设计
 
-Load `references/solid-checklist.md` for detailed prompts.
+加载 `references/solid-checklist.md` 获取详细提示。
 
-Check for:
-- **SRP**: Modules mixing unrelated responsibilities
-- **OCP**: Behavior changes requiring edits instead of extensions
-- **LSP**: Subtypes breaking parent contracts
-- **ISP**: Fat interfaces with unused methods
-- **DIP**: Business logic coupled to infrastructure details
+检查项：
+- **SRP（单一职责）**：模块是否混杂了不相关的职责
+- **OCP（开闭原则）**：行为变更是否需要修改而非扩展
+- **LSP（里氏替换）**：子类型是否破坏了父类型的约定
+- **ISP（接口隔离）**：是否存在包含未使用方法的臃肿接口
+- **DIP（依赖倒置）**：业务逻辑是否耦合了基础设施细节
 
-When proposing a refactor, explain _why_ it improves the design and outline a minimal, safe path. For non-trivial refactors, propose an incremental plan.
+提出重构建议时，解释_为什么_它能改善设计，并概述最小化、安全的实施路径。对于非简单的重构，提出增量计划。
 
-### Phase 3 — Deep Analysis
+### 阶段 3 — 深度分析
 
-Load language-specific guides as needed:
+根据需要加载语言特定的指南：
 - Java/Spring Boot → `references/java.md`
 - C# / .NET → `references/csharp.md`
 - Python → `references/python.md`
 - JavaScript → `references/javascript.md`
 - TypeScript → `references/typescript.md`
 
-Apply cross-cutting checklists:
-- **Security** → `references/security-checklist.md`
-- **Performance** → `references/performance-checklist.md`
-- **Common bugs** → `references/common-bugs.md`
+应用跨领域检查清单：
+- **安全** → `references/security-checklist.md`
+- **性能** → `references/performance-checklist.md`
+- **常见 Bug** → `references/common-bugs.md`
 
-For each language, the reference guide contains:
-- Language-specific pitfalls and anti-patterns
-- Framework-specific concerns (Spring Boot, React, Vue, etc.)
-- Idiomatic code patterns to recommend
-- Security considerations unique to that ecosystem
+每个语言的参考指南包含：
+- 语言特定的陷阱和反模式
+- 框架特定的问题（Spring Boot、React、Vue 等）
+- 值得推荐的惯用代码模式
+- 该生态系统独有的安全考量
 
-### Phase 4 — Summary & Decision
+### 阶段 4 — 总结与决策
 
-## Output
+## 输出
 
-Load `references/report-template.md` and follow it exactly.
+加载 `references/report-template.md` 并严格遵循其格式。
 
-### Report File
+### 报告文件
 
-After completing the review, ALWAYS save the report to a file:
+完成审查后，始终将报告保存为文件：
 
-1. Create `report/` directory in the project root (where the reviewed code lives)
-2. Write the report as a markdown file with this naming pattern:
+1. 在被审查代码所在的项目根目录创建 `report/` 目录
+2. 按以下命名规则写入 Markdown 文件：
 
 ```
 report/<审查目标>_<YYYYMMDD_HHmm>.md
 ```
 
-**Naming examples:**
-- Reviewing `UserService.java` → `report/UserService_20260331_1430.md`
-- Reviewing `src/api/` directory → `report/api_20260331_1430.md`
-- Reviewing a PR with changed files → `report/pr-review_20260331_1430.md`
+**命名示例：**
+- 审查 `UserService.java` → `report/UserService_20260331_1430.md`
+- 审查 `src/api/` 目录 → `report/api_20260331_1430.md`
+- 审查 PR 中变更的文件 → `report/pr-review_20260331_1430.md`
 
-**Rules:**
-- `<审查目标>` uses the primary file name (without extension) or directory name being reviewed
-- Time is local time when the review completes
-- If the file already exists, append a suffix: `_2`, `_3`, etc.
-- Use `mkdir -p report/` to ensure the directory exists
+**规则：**
+- `<审查目标>` 使用被审查的主文件名（不含扩展名）或目录名
+- 时间为审查完成时的本地时间
+- 如果文件已存在，添加后缀：`_2`、`_3` 等
+- 使用 `mkdir -p report/` 确保目录存在
 
-### In-Conversation Summary
+### 对话中的摘要
 
-After saving the file, present a brief summary in the conversation:
+保存文件后，在对话中呈现简要摘要：
 
 ```
-## Review Complete
+## 审查完成
 
-**Report saved**: report/UserService_20260331_1430.md
-**Verdict**: REQUEST_CHANGES
-**Issues**: P0: 1 · P1: 2 · P2: 3 · P3: 1
-**Top risk**: SQL injection in login query (P0)
+**报告已保存**: report/UserService_20260331_1430.md
+**判定**: REQUEST_CHANGES
+**问题统计**: P0: 1 · P1: 2 · P2: 3 · P3: 1
+**核心风险**: 登录查询中的 SQL 注入（P0）
 
 ---
 
-How would you like to proceed?
-1. **Fix all** — I'll implement all suggested fixes
-2. **Fix P0/P1 only** — Address critical and high priority
-3. **Fix specific items** — Tell me which ones
-4. **No changes** — Review complete, report for reference only
+如何继续？
+1. **全部修复** — 我将实施所有建议的修复
+2. **仅修复 P0/P1** — 先处理关键和高优先级问题
+3. **指定修复项** — 告诉我处理哪些编号
+4. **不做修改** — 审查完成，报告仅供参考
 ```
 
-**Do NOT implement changes until the user confirms.** This is a review-first workflow.
+**在用户确认之前不要实施修改。** 这是审查优先的工作流。
 
-### Template Rules
+### 模板规则
 
-1. **Issue numbering** is continuous across all severity levels (P0 starts at 1, P1 continues)
-2. **Security section** always appears — even when no security issues found, it confirms the check was done
-3. **Architecture section** only appears when there are architectural observations — omit entirely otherwise
-4. **Coverage notes** always appear — they set expectations about what was and wasn't checked
-5. **Clean review**: If no issues found, state what was checked, areas not covered, and residual risks
+1. **问题编号**在所有严重程度等级之间连续编号（P0 从 1 开始，P1 接续）
+2. **安全专项**始终出现——即使没有安全问题，也确认已进行安全检查
+3. **架构与设计**仅在存在架构层面的观察时出现——否则完全省略
+4. **审查覆盖说明**始终出现——设定已检查和未检查范围的预期
+5. **无问题审查**：如果没有发现问题，说明检查了什么、未覆盖的区域和残留风险
 
-## Language Detection Guide
+## 语言检测指南
 
-When the review target involves multiple languages, load all relevant reference files. For mixed stacks (e.g., Java backend + React frontend), review each layer with its corresponding guide.
+当审查目标涉及多种语言时，加载所有相关的参考文件。对于混合技术栈（如 Java 后端 + React 前端），使用对应的指南审查每一层。
 
-| File pattern | Load reference |
-|-------------|---------------|
-| `*.java`, `pom.xml`, `build.gradle` | `references/java.md` |
-| `*.cs`, `*.csproj`, `*.sln` | `references/csharp.md` |
-| `*.py`, `requirements.txt`, `pyproject.toml` | `references/python.md` |
-| `*.js`, `*.jsx` | `references/javascript.md` |
-| `*.ts`, `*.tsx` | `references/typescript.md` |
+| 文件模式 | 加载参考 |
+|----------|----------|
+| `*.java`、`pom.xml`、`build.gradle` | `references/java.md` |
+| `*.cs`、`*.csproj`、`*.sln` | `references/csharp.md` |
+| `*.py`、`requirements.txt`、`pyproject.toml` | `references/python.md` |
+| `*.js`、`*.jsx` | `references/javascript.md` |
+| `*.ts`、`*.tsx` | `references/typescript.md` |
 
-## Extension Points
+## 扩展点
 
-This skill is designed to be extensible. To add a new language:
+此技能设计为可扩展的。添加新语言的方法：
 
-1. Create `references/<language>.md` following the same structure as existing guides
-2. Add the file pattern mapping to the Language Detection Guide above
-3. The core workflow, severity levels, and output format apply to all languages automatically
+1. 创建 `references/<language>.md`，遵循现有指南的结构
+2. 在上方语言检测指南中添加文件模式映射
+3. 核心工作流、严重程度等级和输出格式自动适用于所有语言

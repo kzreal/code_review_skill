@@ -1,64 +1,64 @@
-# TypeScript Code Review Guide
+# TypeScript 代码审查指南
 
-## Table of Contents
-1. [Type System](#type-system)
-2. [Strict Mode](#strict-mode)
-3. [Generics](#generics)
-4. [Common Type Mistakes](#common-type-mistakes)
+## 目录
+1. [类型系统](#类型系统)
+2. [严格模式](#严格模式)
+3. [泛型](#泛型)
+4. [常见类型错误](#常见类型错误)
 5. [React + TypeScript](#react--typescript)
 6. [Vue + TypeScript](#vue--typescript)
-7. [API Design](#api-design)
-8. [Tooling](#tooling)
+7. [API 设计](#api-设计)
+8. [工具链](#工具链)
 
 ---
 
-## Type System
+## 类型系统
 
-### Prefer Interfaces for Objects, Types for Unions
+### 对象优先使用 Interface，联合类型使用 Type
 ```typescript
-// Interface: extensible, can be merged
+// Interface：可扩展，可合并
 interface User {
   id: string;
   name: string;
 }
 
-// Type: unions, intersections, mapped types
+// Type：联合类型、交叉类型、映射类型
 type Status = "active" | "inactive" | "suspended";
 type Result<T> = { success: true; data: T } | { success: false; error: string };
 ```
 
-### Avoid `any` — Use Safer Alternatives
+### 避免 `any`——使用更安全的替代方案
 ```typescript
-// BAD: disables all type checking
+// BAD：禁用所有类型检查
 function process(data: any) { ... }
 
-// BETTER: unknown with narrowing
+// BETTER：unknown 配合类型收窄
 function process(data: unknown) {
   if (typeof data === "string") { ... }
 }
 
-// OR: specific type
+// OR：具体类型
 function process(data: Record<string, unknown>) { ... }
 ```
 
-`any` is acceptable only at boundaries with untyped third-party code, and should be isolated and documented.
+`any` 仅在与无类型的第三方代码交互的边界处可接受，且应隔离并文档说明。
 
-### Type Narrowing
-- Use discriminated unions: `{ type: "success"; data: T } | { type: "error"; error: E }`
-- Use type predicates: `function isString(val: unknown): val is string`
-- Use `in` operator: `"name" in obj` to narrow
-- Avoid type assertions (`as`) — use type guards instead
+### 类型收窄
+- 使用可辨识联合：`{ type: "success"; data: T } | { type: "error"; error: E }`
+- 使用类型谓词：`function isString(val: unknown): val is string`
+- 使用 `in` 运算符：`"name" in obj` 进行收窄
+- 避免类型断言（`as`）——改用类型守卫
 
-### Literal Types & Enums
-- Prefer union of literal strings over enums: `type Direction = "up" | "down" | "left" | "right"`
-- Const enums have pitfalls (tree-shaking issues, cannot be used across packages)
-- `as const` for literal type inference: `const ROLES = ["admin", "user"] as const`
+### 字面量类型与枚举
+- 字符串字面量联合优于枚举：`type Direction = "up" | "down" | "left" | "right"`
+- Const enum 有陷阱（tree-shaking 问题，不能跨包使用）
+- `as const` 用于字面量类型推断：`const ROLES = ["admin", "user"] as const`
 
 ---
 
-## Strict Mode
+## 严格模式
 
-### Must-Have `tsconfig.json` Settings
+### `tsconfig.json` 必要设置
 ```json
 {
   "compilerOptions": {
@@ -71,83 +71,83 @@ function process(data: Record<string, unknown>) { ... }
 ```
 
 ### `noUncheckedIndexedAccess`
-Array and object index access returns `T | undefined`. This catches a common class of bugs:
+数组和对象索引访问返回 `T | undefined`。这捕获了一类常见的 Bug：
 ```typescript
-const users: User[] = get Users();
-const user = users[0]; // Type: User | undefined, not User
-user.name; // Error: Object is possibly undefined
+const users: User[] = getUsers();
+const user = users[0]; // 类型：User | undefined，不是 User
+user.name; // 报错：Object is possibly undefined
 ```
 
 ---
 
-## Generics
+## 泛型
 
-### Generic Constraints
+### 泛型约束
 ```typescript
-// BAD: no constraint — T can be anything
+// BAD：无约束——T 可以是任何东西
 function getProperty<T, K>(obj: T, key: K) { ... }
 
-// GOOD: key must be a key of T
+// GOOD：key 必须是 T 的键
 function getProperty<T, K extends keyof T>(obj: T, key: K): T[K] {
   return obj[key];
 }
 ```
 
-### Don't Over-Genericize
-- If a generic is only used in one place, a concrete type is clearer
-- If the generic type parameter appears only once in the signature, it might not need to be generic
-- Prefer `unknown` over unnecessary generics for "accept anything" scenarios
+### 不要过度泛化
+- 如果泛型只在一处使用，具体类型更清晰
+- 如果泛型类型参数在签名中只出现一次，可能不需要泛型
+- "接受任何类型"的场景优先使用 `unknown` 而非不必要的泛型
 
-### Conditional & Mapped Types
-- `Partial<T>`, `Required<T>`, `Pick<T, K>`, `Omit<T, K>` — use built-in utility types
-- `Record<K, V>` for typed dictionaries
-- `ReturnType<T>` and `Parameters<T>` for inferring from functions
-- Don't create custom utility types that duplicate built-in ones
+### 条件类型与映射类型
+- `Partial<T>`、`Required<T>`、`Pick<T, K>`、`Omit<T, K>`——使用内置工具类型
+- `Record<K, V>` 用于类型化字典
+- `ReturnType<T>` 和 `Parameters<T>` 用于从函数推断
+- 不要创建与内置重复的自定义工具类型
 
 ---
 
-## Common Type Mistakes
+## 常见类型错误
 
-### Type Assertions
+### 类型断言
 ```typescript
-// BAD: lying to the type system
+// BAD：对类型系统撒谎
 const user = data as User;
 
-// BETTER: runtime validation
-const user = UserSchema.parse(data); // zod, valibot, etc.
+// BETTER：运行时校验
+const user = UserSchema.parse(data); // zod、valibot 等
 
-// ACCEPTABLE: at module boundaries with runtime check
+// ACCEPTABLE：模块边界处有运行时检查
 const user = data as User;
 if (!user.id || !user.name) throw new Error("Invalid user");
 ```
 
-### Non-null Assertion
+### 非空断言
 ```typescript
-// BAD: doesn't actually check
+// BAD：实际上没有检查
 const el = document.getElementById("app")!;
 
-// BETTER: explicit check
+// BETTER：显式检查
 const el = document.getElementById("app");
 if (!el) throw new Error("Element not found");
 ```
 
-### Enum Pitfalls
-- Numeric enums are bidirectional (can assign any number) — prefer string enums or union types
-- `const enum` inlining breaks across package boundaries
-- Union types are generally preferred over enums in modern TypeScript
+### 枚举陷阱
+- 数字枚举是双向的（可以赋任意数字）——优先使用字符串枚举或联合类型
+- `const enum` 的内联在跨包边界时会出问题
+- 现代 TypeScript 中通常推荐使用联合类型而非枚举
 
-### Declaration Files
-- Don't use `@ts-ignore` — use `@ts-expect-error` (it errors if the next line doesn't have a type error)
-- Custom `.d.ts` files for untyped packages — contribute to DefinitelyTyped instead if possible
-- `declare module "untyped-lib"` should only be a temporary measure
+### 声明文件
+- 不要使用 `@ts-ignore`——使用 `@ts-expect-error`（下一行没有类型错误时会报错）
+- 无类型包使用自定义 `.d.ts` 文件——可能的话贡献到 DefinitelyTyped
+- `declare module "untyped-lib"` 应只作为临时措施
 
 ---
 
 ## React + TypeScript
 
-### Component Typing
+### 组件类型定义
 ```typescript
-// Preferred: inline props type
+// 推荐方式：内联 props 类型
 interface UserCardProps {
   user: User;
   onEdit: (id: string) => void;
@@ -157,14 +157,14 @@ interface UserCardProps {
 function UserCard({ user, onEdit, isLoading = false }: UserCardProps) { ... }
 ```
 
-### Hook Typing
+### Hook 类型定义
 ```typescript
 // useState
 const [count, setCount] = useState<number>(0);
 const [user, setUser] = useState<User | null>(null);
 
 // useRef
-const inputRef = useRef<HTMLInputElement>(null); // null for DOM refs
+const inputRef = useRef<HTMLInputElement>(null); // DOM ref 用 null
 const timerRef = useRef<ReturnType<typeof setTimeout>>();
 
 // useReducer
@@ -172,16 +172,16 @@ type Action = { type: "increment" } | { type: "decrement" };
 function reducer(state: number, action: Action): number { ... }
 ```
 
-### Event Typing
+### 事件类型定义
 ```typescript
 function handleSubmit(e: React.FormEvent<HTMLFormElement>) { ... }
 function handleClick(e: React.MouseEvent<HTMLButtonElement>) { ... }
 function handleChange(e: React.ChangeEvent<HTMLInputElement>) { ... }
 ```
 
-### Generic Components
+### 泛型组件
 ```typescript
-// Generic list component
+// 泛型列表组件
 interface ListProps<T> {
   items: T[];
   renderItem: (item: T) => React.ReactNode;
@@ -195,10 +195,10 @@ function List<T>({ items, renderItem, keyExtractor }: ListProps<T>) { ... }
 
 ## Vue + TypeScript
 
-### Component Typing (Vue 3.5+)
+### 组件类型定义（Vue 3.5+）
 ```vue
 <script setup lang="ts">
-// Props with defaults
+// 带默认值的 Props
 interface Props {
   title: string;
   count?: number;
@@ -213,19 +213,19 @@ const emit = defineEmits<{
 </script>
 ```
 
-### Ref Typing
+### Ref 类型定义
 ```typescript
 const count = ref<number>(0);
 const user = ref<User | null>(null);
 const items = ref<string[]>([]);
 
-// Template ref
+// 模板 ref
 const inputRef = useTemplateRef<HTMLInputElement>("input");
 ```
 
-### Composable Typing
+### Composable 类型定义
 ```typescript
-// Return type should be inferred, not explicitly typed
+// 返回类型应该被推断，而非显式标注
 function useUser(id: Ref<string>) {
   const user = ref<User | null>(null);
   const isLoading = ref(false);
@@ -240,7 +240,7 @@ function useUser(id: Ref<string>) {
 }
 ```
 
-### Provide/Inject Typing
+### Provide/Inject 类型定义
 ```typescript
 // Provider
 provide<UserService>(UserServiceKey, service);
@@ -252,10 +252,10 @@ if (!service) throw new Error("UserService not provided");
 
 ---
 
-## API Design
+## API 设计
 
-### Runtime Validation
-Use Zod, Valibot, or similar for API boundaries:
+### 运行时校验
+API 边界使用 Zod、Valibot 或类似库：
 ```typescript
 import { z } from "zod";
 
@@ -269,11 +269,11 @@ const UserSchema = z.object({
 type User = z.infer<typeof UserSchema>;
 ```
 
-Always validate at system boundaries: API responses, form inputs, URL params, localStorage reads.
+始终在系统边界处校验：API 响应、表单输入、URL 参数、localStorage 读取。
 
-### API Response Typing
+### API 响应类型定义
 ```typescript
-// Typed fetch wrapper
+// 类型化的 fetch 封装
 async function fetchJson<T>(url: string): Promise<T> {
   const response = await fetch(url);
   if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -281,7 +281,7 @@ async function fetchJson<T>(url: string): Promise<T> {
 }
 ```
 
-### Error Typing
+### 错误类型定义
 ```typescript
 class AppError extends Error {
   constructor(
@@ -297,19 +297,19 @@ class AppError extends Error {
 
 ---
 
-## Tooling
+## 工具链
 
-### ESLint Configuration
-- `@typescript-eslint/recommended` as baseline
-- `@typescript-eslint/strict-type-checked` for stricter rules
-- Key rules to enforce:
-  - `no-explicit-any` — flag or ban `any`
-  - `no-unsafe-assignment` — no implicit any from any
-  - `consistent-type-imports` — `import type { X }` for type-only imports
-  - `no-floating-promises` — every promise must be handled
+### ESLint 配置
+- `@typescript-eslint/recommended` 作为基线
+- `@typescript-eslint/strict-type-checked` 用于更严格的规则
+- 关键规则：
+  - `no-explicit-any`——标记或禁止 `any`
+  - `no-unsafe-assignment`——禁止从 any 隐式获取 any
+  - `consistent-type-imports`——仅类型导入使用 `import type { X }`
+  - `no-floating-promises`——每个 Promise 都必须被处理
 
-### Project Structure
-- Co-locate types with the code they describe
-- Shared types in `types/` or `@types/` directory
-- Don't create a single `types.ts` mega-file
-- Use `index.ts` barrel exports sparingly — they can hurt tree-shaking
+### 项目结构
+- 类型定义与它们描述的代码放在一起
+- 共享类型放在 `types/` 或 `@types/` 目录
+- 不要创建单个 `types.ts` 巨型文件
+- 谨慎使用 `index.ts` barrel 导出——它们可能影响 tree-shaking

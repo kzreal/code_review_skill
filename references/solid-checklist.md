@@ -1,148 +1,148 @@
-# SOLID & Architecture Review Checklist
+# SOLID 与架构审查检查清单
 
-## Single Responsibility Principle (SRP)
+## 单一职责原则（SRP）
 
-**A module should have one reason to change.**
+**一个模块应该只有一个变更的理由。**
 
-### Smells
-- Class/function that handles both business logic and infrastructure (DB, HTTP, file I/O)
-- Service class with "and" in its conceptual name: `UserAndOrderService`
-- Functions longer than ~50 lines doing multiple distinct operations
-- Module importing from many unrelated packages
-- `utils.ts` / `helpers.py` catch-all files that grow without bound
+### 代码异味
+- 类/函数同时处理业务逻辑和基础设施（数据库、HTTP、文件 I/O）
+- Service 类概念名称中包含"和"：`UserAndOrderService`
+- 超过约 50 行的函数执行多个不同操作
+- 模块从不相关的包中导入大量内容
+- `utils.ts` / `helpers.py` 这类万能文件无限膨胀
 
-### Review Prompts
-- "What single responsibility does this class/module have?"
-- "If business rule X changes, which files need to be modified?" (Should be 1-2, not 5+)
-- "Does this function do one thing, or does it do the thing AND handle errors AND format output AND log?"
+### 审查提示
+- "这个类/模块的唯一职责是什么？"
+- "如果业务规则 X 变了，需要修改哪些文件？"（应该是 1-2 个，而非 5+ 个）
+- "这个函数是做一件事，还是做了一件事又处理错误又格式化输出又写日志？"
 
-### Refactoring Approach
-- Extract infrastructure concerns (DB, HTTP, logging) from business logic
-- Split "god classes" along responsibility boundaries
-- Use the Strategy pattern when a class has multiple algorithms
-
----
-
-## Open/Closed Principle (OCP)
-
-**Software entities should be open for extension, closed for modification.**
-
-### Smells
-- Adding a new type requires modifying a large switch/if-else chain
-- Adding a new feature requires changes in 5+ existing files
-- Feature flags scattered across the codebase
-- Type-checking pattern: `if (type === "A") { ... } else if (type === "B") { ... }`
-
-### Review Prompts
-- "How many files need to change to add a new payment method / notification channel / data source?"
-- "Is this switch statement closed for modification, or does every new case require editing it?"
-- "Could this be expressed as a registry or plugin pattern instead?"
-
-### Refactoring Approach
-- Registry pattern: each type registers itself, the core doesn't change
-- Strategy pattern: behavior injected rather than hard-coded
-- Template method pattern for algorithm skeletons with varying steps
-- In TypeScript/Python: discriminated unions or protocols for extensibility
+### 重构方法
+- 从业务逻辑中提取基础设施关注点（数据库、HTTP、日志）
+- 沿职责边界拆分"上帝类"
+- 当类包含多种算法时使用策略模式
 
 ---
 
-## Liskov Substitution Principle (LSP)
+## 开闭原则（OCP）
 
-**Subtypes must be substitutable for their base types.**
+**软件实体应该对扩展开放，对修改关闭。**
 
-### Smells
-- Subclass that throws `UnsupportedOperationException` for inherited methods
-- `instanceof` checks to handle specific subclass behavior
-- Subclass that strengthens preconditions or weakens postconditions
-- Empty method overrides that do nothing (violating parent contract)
-- Subclass that changes the meaning of inherited methods
+### 代码异味
+- 添加新类型需要修改庞大的 switch/if-else 链
+- 添加新功能需要修改 5+ 个现有文件
+- Feature flag 散布在代码库各处
+- 类型检查模式：`if (type === "A") { ... } else if (type === "B") { ... }`
 
-### Review Prompts
-- "Can I use any subclass of this interface interchangeably without knowing which one?"
-- "Does this override respect the parent's contract, or does it change expectations?"
-- "Why is there an `instanceof` check here? Does the hierarchy need redesigning?"
+### 审查提示
+- "添加新的支付方式 / 通知渠道 / 数据源需要修改多少个文件？"
+- "这个 switch 语句是封闭的，还是每个新 case 都需要编辑它？"
+- "这能否用注册表或插件模式来表达？"
 
-### Refactoring Approach
-- If subclasses can't fulfill the contract, the hierarchy is wrong
-- Prefer composition over inheritance when behavior differs significantly
-- Split the interface: narrower interfaces that each subclass can fully implement
-- Use `final` / `sealed` when a class is not designed for extension
-
----
-
-## Interface Segregation Principle (ISP)
-
-**Clients should not be forced to depend on interfaces they do not use.**
-
-### Smells
-- Interface with 10+ methods where most implementers only care about 2-3
-- "Fat interface" that combines unrelated capabilities
-- Implementers throwing `NotImplementedException` for methods they don't need
-- Changes to one method force recompilation/redeployment of unrelated consumers
-
-### Review Prompts
-- "Does every consumer of this interface use all its methods?"
-- "Could this be split into 2-3 focused interfaces?"
-- "Why does this class implement methods it doesn't use?"
-
-### Refactoring Approach
-- Split fat interfaces into focused ones (e.g., `Readable` + `Writable` instead of `IO`)
-- Role interfaces: one interface per consumer role
-- In dynamic languages (Python, JS): Protocol / duck typing naturally supports ISP
+### 重构方法
+- 注册表模式：每种类型自行注册，核心不变
+- 策略模式：行为注入而非硬编码
+- 模板方法模式：算法骨架固定，步骤可变
+- TypeScript/Python 中：使用可辨识联合或 Protocol 实现可扩展性
 
 ---
 
-## Dependency Inversion Principle (DIP)
+## 里氏替换原则（LSP）
 
-**High-level modules should not depend on low-level modules. Both should depend on abstractions.**
+**子类型必须能够替换其基类型。**
 
-### Smells
-- Business logic directly importing/using specific database client, HTTP library, or file system
-- Hard-coded external service URLs or connection strings in business logic
-- Tests that require real database or external API to run
-- `new` keyword for infrastructure objects inside business logic
-- Business logic that knows about framework-specific types
+### 代码异味
+- 子类对继承的方法抛出 `UnsupportedOperationException`
+- 使用 `instanceof` 检查来处理特定子类行为
+- 子类加强了前置条件或削弱了后置条件
+- 空的方法覆写什么都不做（违反父类约定）
+- 子类改变了继承方法的语义
 
-### Review Prompts
-- "Can I test this business logic without a database?"
-- "If we switch from MySQL to PostgreSQL, does business logic need to change?"
-- "Does this module depend on an abstraction or a specific implementation?"
+### 审查提示
+- "我能否在不知道具体子类的情况下互换使用此接口的任何子类？"
+- "这个覆写是否遵循了父类的约定，还是改变了期望行为？"
+- "这里为什么有 `instanceof` 检查？继承层次是否需要重新设计？"
 
-### Refactoring Approach
-- Define interfaces/protocols for external dependencies
-- Dependency injection: receive dependencies, don't create them
-- Repository pattern for data access abstraction
-- Anti-corruption layer for third-party API integration
+### 重构方法
+- 如果子类无法履行约定，说明继承层次有问题
+- 行为差异显著时优先使用组合而非继承
+- 拆分接口：更窄的接口让每个子类都能完整实现
+- 不打算被继承的类使用 `final` / `sealed`
 
 ---
 
-## Cross-Cutting Architecture Concerns
+## 接口隔离原则（ISP）
 
-### Coupling
-- **Afferent coupling** (who depends on this): High for stable modules, low for volatile ones
-- **Efferent coupling** (what does this depend on): Should be minimal for core business logic
-- Avoid circular dependencies between modules
-- Use events/messages for cross-module communication when appropriate
+**客户端不应被迫依赖它们不使用的接口。**
 
-### Cohesion
-- All elements of a module should work together to accomplish a single purpose
-- Low cohesion indicators: many private methods that don't share data, many parameters passed between methods
-- High cohesion indicators: methods work on the same data, meaningful module name
+### 代码异味
+- 10+ 个方法的接口，大多数实现者只关心 2-3 个
+- "胖接口"组合了不相关的功能
+- 实现者对不需要的方法抛出 `NotImplementedException`
+- 一个方法的变更导致不相关消费者的重新编译/部署
 
-### Layering
-- Clear separation: presentation → application → domain → infrastructure
-- Dependency direction: outer layers depend on inner layers, never the reverse
-- No business logic in controllers/handlers
-- No presentation concerns (HTTP status codes, HTML) in services/domain
+### 审查提示
+- "这个接口的每个消费者是否都使用了它的所有方法？"
+- "这能否拆分为 2-3 个专注的接口？"
+- "为什么这个类实现了它不使用的方法？"
 
-### API Design
-- Consistent naming and error handling across endpoints
-- Version strategy for breaking changes
-- Pagination for list endpoints
-- Request/response DTOs separate from domain entities
+### 重构方法
+- 将胖接口拆分为专注的接口（如：`Readable` + `Writable` 替代 `IO`）
+- 角色接口：每个消费者角色一个接口
+- 动态语言（Python、JS）中：Protocol / 鸭子类型天然支持 ISP
 
-### Error Architecture
-- Define error hierarchy per domain
-- Errors should carry context (what operation, what entity, what went wrong)
-- Don't expose internal error details to API consumers
-- Distinguish between client errors (4xx) and server errors (5xx)
+---
+
+## 依赖倒置原则（DIP）
+
+**高层模块不应依赖低层模块。两者都应依赖抽象。**
+
+### 代码异味
+- 业务逻辑直接导入/使用特定的数据库客户端、HTTP 库或文件系统
+- 业务逻辑中硬编码的外部服务 URL 或连接字符串
+- 测试需要真实数据库或外部 API 才能运行
+- 业务逻辑中 `new` 关键字创建基础设施对象
+- 业务逻辑了解框架特定的类型
+
+### 审查提示
+- "我能否在没有数据库的情况下测试这段业务逻辑？"
+- "如果从 MySQL 切换到 PostgreSQL，业务逻辑是否需要修改？"
+- "这个模块依赖的是抽象还是具体实现？"
+
+### 重构方法
+- 为外部依赖定义接口/Protocol
+- 依赖注入：接收依赖，而非创建依赖
+- Repository 模式用于数据访问抽象
+- 防腐层用于第三方 API 集成
+
+---
+
+## 横切架构关注点
+
+### 耦合
+- **传入耦合**（谁依赖此模块）：稳定模块应较高，易变模块应较低
+- **传出耦合**（此模块依赖什么）：核心业务逻辑应最少
+- 避免模块间的循环依赖
+- 适当时使用事件/消息进行跨模块通信
+
+### 内聚
+- 模块的所有元素应协同完成单一目标
+- 低内聚指标：许多不共享数据的私有方法、方法间传递大量参数
+- 高内聚指标：方法操作相同的数据、模块名称有意义
+
+### 分层
+- 清晰的分离：表现层 → 应用层 → 领域层 → 基础设施层
+- 依赖方向：外层依赖内层，绝不能反向
+- Controller/Handler 中没有业务逻辑
+- Service/Domain 中没有表现层关注点（HTTP 状态码、HTML）
+
+### API 设计
+- 端点间一致的命名和错误处理
+- 破坏性变更的版本策略
+- 列表端点的分页
+- Request/Response DTO 与领域实体分离
+
+### 错误架构
+- 每个领域定义错误层次
+- 错误应携带上下文（什么操作、什么实体、出了什么问题）
+- 不向 API 消费者暴露内部错误细节
+- 区分客户端错误（4xx）和服务端错误（5xx）

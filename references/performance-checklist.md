@@ -1,151 +1,151 @@
-# Performance Review Checklist
+# 性能审查检查清单
 
-## Database
+## 数据库
 
-### N+1 Queries
-The #1 performance issue in almost every codebase.
+### N+1 查询
+几乎所有代码库中排第一的性能问题。
 
-**Patterns to look for:**
-- Loop that queries the database on each iteration
-- ORM lazy-loading relationships inside a loop
-- `@OneToMany` with EAGER fetch accessed in batch operations
-- Service method that queries one entity, then loops over its children and queries each
+**需要关注的模式：**
+- 循环中每次迭代都查询数据库
+- ORM 在循环中懒加载关联关系
+- `@OneToMany` 设置 EAGER 加载，在批量操作中被访问
+- Service 方法查询一个实体，然后遍历其子集合并逐个查询
 
-**Solutions:**
+**解决方案：**
 - JOIN FETCH / Entity Graph / select_related / prefetch_related
-- Batch queries with IN clause
-- DataLoader pattern (GraphQL, or any batch-loading scenario)
-- Denormalize for read-heavy access patterns
+- 使用 IN 子句的批量查询
+- DataLoader 模式（GraphQL，或任何批量加载场景）
+- 对读多写少的访问模式做反范式化
 
-### Missing Indexes
-- WHERE clause columns without indexes
-- JOIN columns without indexes
-- ORDER BY columns without indexes (causes filesort)
-- Composite indexes for multi-column WHERE conditions
+### 缺失索引
+- WHERE 子句中的列没有索引
+- JOIN 列没有索引
+- ORDER BY 列没有索引（导致 filesort）
+- 多列 WHERE 条件缺少组合索引
 
-### Query Efficiency
-- SELECT * when only specific columns are needed
-- Missing pagination on large result sets
-- Unnecessary DISTINCT / GROUP BY
-- Subqueries that could be JOINs
-
----
-
-## Caching
-
-### When to Cache
-- Frequently read, rarely written data (reference data, config, user profiles)
-- Computed results that are expensive to regenerate
-- External API responses that don't change often
-
-### Cache Pitfalls
-- No TTL / expiration → stale data forever
-- Cache invalidation not triggered on data changes
-- Cache key doesn't include relevant parameters (language, user context, etc.)
-- Hot keys: single cache entry accessed by all requests
-- Cache stampede: many requests miss cache simultaneously and all compute
-
-### Cache Strategy
-- Cache-aside: application manages cache explicitly (most common)
-- Write-through: update cache on write
-- Consider cache penetration protection for non-existent keys
+### 查询效率
+- 只需要特定列却使用 SELECT *
+- 大结果集缺少分页
+- 不必要的 DISTINCT / GROUP BY
+- 可以用 JOIN 代替的子查询
 
 ---
 
-## Memory
+## 缓存
+
+### 何时使用缓存
+- 频繁读取、很少写入的数据（参考数据、配置、用户画像）
+- 重新计算代价很高的计算结果
+- 不经常变化的外部 API 响应
+
+### 缓存陷阱
+- 无 TTL / 过期时间 → 数据永远过时
+- 数据变更时未触发缓存失效
+- 缓存 key 未包含相关参数（语言、用户上下文等）
+- 热点 key：所有请求访问同一个缓存条目
+- 缓存雪崩：大量请求同时未命中缓存并同时计算
+
+### 缓存策略
+- Cache-aside：应用显式管理缓存（最常见）
+- Write-through：写入时更新缓存
+- 考虑对不存在的 key 做缓存穿透防护
+
+---
+
+## 内存
 
 ### Java
-- Large object allocations in hot paths
-- Memory leaks through static collections, unclosed resources, listener registration
-- String concatenation in loops → `StringBuilder`
-- Unnecessary boxing: `Integer` vs `int` in collections
-- Stream operations that materialize large collections
+- 热路径中的大对象分配
+- 通过静态集合、未关闭资源、监听器注册导致的内存泄漏
+- 循环中的字符串拼接 → 使用 `StringBuilder`
+- 不必要的装箱：集合中 `Integer` vs `int`
+- Stream 操作物化大型集合
 
 ### Python
-- Loading entire datasets into memory instead of streaming
-- Circular references preventing garbage collection
-- `__slots__` for classes with many instances
-- Generator expressions vs list comprehensions for large data
+- 将整个数据集加载到内存而非流式处理
+- 循环引用阻止垃圾回收
+- 大量实例的类使用 `__slots__`
+- 大数据使用生成器表达式而非列表推导
 
 ### JavaScript
-- Memory leaks: event listeners not removed, closures holding references, timers not cleared
-- Large arrays in memory when streaming would work
-- `Map`/`Set` that grow unbounded (needs eviction strategy)
-- DOM references in detached components
+- 内存泄漏：事件监听器未移除、闭包持有引用、定时器未清除
+- 可以流式处理时在内存中持有大数组
+- 无限增长的 `Map`/`Set`（需要淘汰策略）
+- 已卸载组件中的 DOM 引用
 
 ---
 
-## Concurrency & Parallelism
+## 并发与并行
 
-### Thread Pool Configuration
-- Default thread pool sizes may not be appropriate for production load
-- I/O-bound: more threads than CPU cores (or virtual threads in Java 21)
-- CPU-bound: roughly equal to CPU cores
-- Watch for thread pool exhaustion from blocking operations
+### 线程池配置
+- 默认线程池大小可能不适合生产负载
+- I/O 密集型：线程数多于 CPU 核心数（或 Java 21 的虚拟线程）
+- CPU 密集型：约等于 CPU 核心数
+- 注意阻塞操作导致的线程池耗尽
 
-### Async Patterns
-- Sequential awaits when operations are independent → `Promise.all()`, `asyncio.gather()`
-- Blocking the event loop with CPU-intensive synchronous work
-- Not using connection pooling for database / HTTP clients
+### 异步模式
+- 互不依赖的操作使用顺序 await → 应使用 `Promise.all()`、`asyncio.gather()`
+- CPU 密集型同步工作阻塞事件循环
+- 数据库 / HTTP 客户端未使用连接池
 
-### Lock Contention
-- `synchronized` methods in Java that are called frequently
-- Global locks when finer-grained locks would work
-- Lock ordering issues that could cause deadlocks
+### 锁竞争
+- Java 中频繁调用的 `synchronized` 方法
+- 可以使用细粒度锁却使用了全局锁
+- 锁排序问题可能导致死锁
 
 ---
 
-## Frontend Performance
+## 前端性能
 
-### Bundle Size
-- Tree-shaking: verify named imports, avoid side effects
-- Code splitting: lazy-load routes and heavy components
-- Large dependencies that could be replaced with smaller alternatives
-- Duplicate dependencies in bundle
+### 包体积
+- Tree-shaking：验证具名导入，避免副作用
+- 代码分割：懒加载路由和重型组件
+- 可以用更小替代方案替换的大型依赖
+- 包中的重复依赖
 
-### Rendering Performance
-- Unnecessary re-renders: missing `React.memo`, `useMemo`, `useCallback`
-- Expensive computations on every render
-- Large lists without virtualization
-- Layout thrashing: reading DOM layout properties in a loop
+### 渲染性能
+- 不必要的重渲染：缺少 `React.memo`、`useMemo`、`useCallback`
+- 每次渲染都执行昂贵计算
+- 大列表没有虚拟化
+- 布局抖动：循环中读取 DOM 布局属性
 
-### Network
-- Missing compression (gzip/brotli)
-- No caching headers for static assets
-- Waterfall requests: sequential API calls that could be parallel
-- Missing image optimization (WebP, lazy loading, responsive sizes)
+### 网络
+- 缺少压缩（gzip/brotli）
+- 静态资源没有缓存头
+- 瀑布式请求：可以并行的 API 调用变成了串行
+- 缺少图片优化（WebP、懒加载、响应式尺寸）
 
 ### Core Web Vitals
-- **LCP** (Largest Contentful Paint): < 2.5s — affected by server response time, resource load, render-blocking
-- **INP** (Interaction to Next Paint): < 200ms — affected by main thread blocking, event handler performance
-- **CLS** (Cumulative Layout Shift): < 0.1 — affected by image/video dimensions, dynamic content insertion, web fonts
+- **LCP**（最大内容绘制）：< 2.5s——受服务器响应时间、资源加载、渲染阻塞影响
+- **INP**（交互到下一次绘制）：< 200ms——受主线程阻塞、事件处理器性能影响
+- **CLS**（累积布局偏移）：< 0.1——受图片/视频尺寸、动态内容插入、Web 字体影响
 
 ---
 
-## API Performance
+## API 性能
 
-### Request/Response
-- Over-fetching: returning more data than the client needs
-- Under-fetching: requiring multiple requests for related data
-- No compression for large JSON responses
-- Missing pagination for list endpoints
-- Synchronous processing for operations that could be async
+### 请求/响应
+- 过度获取：返回了客户端不需要的数据
+- 获取不足：获取关联数据需要多次请求
+- 大型 JSON 响应没有压缩
+- 列表端点缺少分页
+- 可以异步处理的操作使用同步处理
 
-### Backend Patterns
-- Connection pooling for database and HTTP clients
-- Request batching for external API calls
-- Background processing for non-critical operations (email, logging, analytics)
-- Circuit breakers for external service calls
+### 后端模式
+- 数据库和 HTTP 客户端使用连接池
+- 外部 API 调用使用请求批处理
+- 非关键操作（邮件、日志、分析）使用后台处理
+- 外部服务调用使用熔断器
 
 ---
 
-## Common Anti-Patterns
+## 常见反模式
 
-| Anti-Pattern | Symptom | Fix |
-|-------------|---------|-----|
-| N+1 queries | Linear increase in DB calls with data size | Batch queries, JOIN FETCH |
-| Synchronous in hot path | Request latency proportional to external calls | Async, parallel, cache |
-| Loading everything | High memory, slow startup | Pagination, lazy loading, streaming |
-| No caching for reads | Repeated identical queries/computations | Cache with TTL and invalidation |
-| Premature optimization | Complex code for hypothetical performance | Measure first, optimize the bottleneck |
-| Missing pagination | OOM or timeout on large datasets | Cursor or offset pagination |
+| 反模式 | 症状 | 修复方式 |
+|--------|------|----------|
+| N+1 查询 | 数据库调用随数据量线性增长 | 批量查询、JOIN FETCH |
+| 热路径中的同步调用 | 请求延迟与外部调用成正比 | 异步、并行、缓存 |
+| 加载所有数据 | 内存占用高、启动慢 | 分页、懒加载、流式处理 |
+| 读取不缓存 | 重复执行相同的查询/计算 | 带有 TTL 和失效机制的缓存 |
+| 过早优化 | 为假想的性能写复杂代码 | 先测量，优化瓶颈 |
+| 缺少分页 | 大数据集 OOM 或超时 | 游标分页或偏移分页 |
