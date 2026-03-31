@@ -1,0 +1,98 @@
+# Report Template
+
+Use this template for all code review output. Adapt section content to the review scope — omit empty sections rather than filling them with "N/A".
+
+---
+
+```markdown
+# 代码审查报告
+
+**项目**: {项目名称}
+**审查范围**: {文件/模块/PR 描述}
+**审查日期**: {YYYY-MM-DD}
+
+---
+
+## 总体评估
+
+| 项目 | 结论 |
+|------|------|
+| **判定** | APPROVE / REQUEST_CHANGES / COMMENT |
+| **问题统计** | P0: {n} · P1: {n} · P2: {n} · P3: {n} |
+| **核心风险** | {一句话描述最需要关注的问题，无则填"无显著风险"} |
+
+---
+
+## 问题清单
+
+### P0 — Critical（必须修复）
+
+> 无 / 或按如下格式列出
+
+**1. [文件路径:行号] 问题标题**
+- **问题**: 具体描述发生了什么
+- **影响**: 为什么这个问题严重（安全风险/数据丢失/正确性）
+- **建议**: 具体的修复方向或代码片段
+
+### P1 — High（应当修复）
+
+（格式同上，编号续接）
+
+### P2 — Medium（建议修复）
+
+（格式同上，编号续接）
+
+### P3 — Low（可选优化）
+
+（格式同上，编号续接）
+
+---
+
+## 安全专项
+
+> 汇总所有安全问题，便于安全审计追踪。无安全问题则标注"本次审查未发现安全问题"。
+
+| # | 类型 | 严重度 | 位置 | 说明 |
+|---|------|--------|------|------|
+| 1 | {如: SQL注入} | P0 | {文件:行号} | {简要描述} |
+
+（常见类型参考：SQL注入、XSS、SSRF、路径穿越、硬编码密钥、越权访问、反序列化漏洞、CSRF、信息泄露）
+
+---
+
+## 架构与设计
+
+> 架构层面的观察，不对应具体代码行。无则省略此节。
+
+- **SRP 违反**: {描述}
+- **过度耦合**: {描述}
+- **缺失抽象**: {描述}
+
+---
+
+## 审查覆盖说明
+
+- **已覆盖**: {列出了哪些维度的检查，如：安全、SOLID、性能、错误处理、边界条件}
+- **未覆盖**: {哪些方面未深入检查，如：数据库迁移、第三方库版本、生产环境配置}
+- **建议后续**: {推荐的跟进动作，如：补充单元测试、性能压测、依赖审计}
+
+---
+
+## 下一步
+
+请确认处理方式：
+1. **全部修复** — 按优先级实施所有建议
+2. **仅修 P0/P1** — 先处理关键问题
+3. **指定修复项** — 告诉我处理哪些编号
+4. **仅作参考** — 审查完成，暂不修改
+```
+
+---
+
+## Template Usage Notes
+
+- **Issue numbering** is continuous across all severity levels (P0 starts at 1, P1 continues)
+- **Security section** always appears — even when no issues found, it serves as an explicit confirmation
+- **Architecture section** is optional — omit entirely when no architectural observations
+- **Coverage notes** always appear — they set expectations about what was and wasn't checked
+- **Next steps** always appear — it prompts the user to decide on action, keeping the review-first workflow
